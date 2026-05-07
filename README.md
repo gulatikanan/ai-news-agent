@@ -54,8 +54,8 @@ ai-news-agent/
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Repository foundation — folders, gitignore, README | In progress |
-| 2 | Supabase schema — create articles table, test connection | Pending |
+| 1 | Repository foundation — folders, gitignore, README | Done |
+| 2 | Supabase schema — create articles table, test connection | Done |
 | 3 | VPS provisioning — create VM, install Node.js | Pending |
 | 4 | OpenClaw setup — install on VPS, run gateway, hello-world | Pending |
 | 5 | RSS ingestion — fetch articles, deduplicate, write to Supabase | Pending |
