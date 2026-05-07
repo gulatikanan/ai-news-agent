@@ -1,0 +1,13 @@
+{
+  "name": "ai-news-agent-ingest",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "ingest": "node scripts/ingest.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "rss-parser": "^3.0.0"
+  }
+}

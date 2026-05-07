@@ -58,7 +58,7 @@ ai-news-agent/
 | 2 | Supabase schema — create articles table, test connection | Done |
 | 3 | VPS provisioning — create VM, install Node.js | Pending |
 | 4 | OpenClaw setup — install on VPS, run gateway, hello-world | Pending |
-| 5 | RSS ingestion — fetch articles, deduplicate, write to Supabase | Pending |
+| 5 | RSS ingestion — fetch articles, deduplicate, write to Supabase | Done |
 | 6 | Cron scheduling — crontab entry, every 4 hours, logging | Pending |
 | 7 | Next.js frontend — article list, Tailwind CSS | Pending |
 | 8 | Vercel deployment — connect repo, set env vars, live URL | Pending |
