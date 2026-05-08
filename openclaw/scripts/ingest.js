@@ -7,6 +7,7 @@ const FEEDS = [
   {
     url: 'https://news.ycombinator.com/rss',
     source: 'hackernews',
+    filter: true,
   },
   {
     url: 'https://techcrunch.com/category/artificial-intelligence/feed/',
@@ -18,13 +19,26 @@ const FEEDS = [
   },
 ];
 
+const HN_KEYWORDS = [
+  'ai', 'llm', 'ml', 'gpt', 'claude', 'gemini', 'agent', 'openai',
+  'anthropic', 'mistral', 'ollama', 'model', 'inference', 'vector',
+  'embedding', 'fine-tun', 'transformer', 'diffusion', 'copilot',
+  'cursor', 'rag', 'langchain', 'mcp', 'agentic', 'developer tool',
+  'open-source ai', 'neural', 'deep learning', 'hugging face', 'cohere',
+];
+
+function isAIRelated(title) {
+  const lower = title.toLowerCase();
+  return HN_KEYWORDS.some(kw => lower.includes(kw));
+}
+
 async function summarizeArticle(title) {
   const prompt = `Summarize this AI/ML news in 2-3 sentences. Developer-focused tone, factual, no hype:\n\n${title}`;
 
   const res = await fetch('https://ollama.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+      'Authorization': `Bearer ${process.env.OLLAMA_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -63,7 +77,8 @@ async function ingest() {
           source: feed.source,
           published_at: item.pubDate ? new Date(item.pubDate).toISOString() : null,
         }))
-        .filter(a => a.title && a.url);
+        .filter(a => a.title && a.url)
+        .filter(a => !feed.filter || isAIRelated(a.title));
 
       console.log(`  → ${items.length} articles parsed`);
       articles.push(...items);
