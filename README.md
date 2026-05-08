@@ -10,12 +10,14 @@ Built with OpenClaw (agent runtime) · Supabase (database) · Next.js + Vercel (
 
 ```
 [VPS]
-  OpenClaw agent
-    → polls Google News RSS + Hacker News API
-    → deduplicates by URL
-    → writes articles to Supabase
+  cron (every 4 hours) → triggers ingest.js
 
-  cron (every 4 hours) → triggers pipeline
+  ingest.js
+    → polls Google News RSS + Hacker News API + TechCrunch
+    → deduplicates by URL
+    → writes new articles to Supabase
+    → calls Ollama cloud API (Ministral 3B) to summarize each new article
+    → writes summary back to Supabase
 
         |
         | writes rows
@@ -23,7 +25,7 @@ Built with OpenClaw (agent runtime) · Supabase (database) · Next.js + Vercel (
 
 [Supabase]
   articles table
-    id, title, url, source, published_at, created_at
+    id, title, url, source, published_at, summary, created_at
 
         |
         | reads via Supabase JS client
@@ -31,7 +33,7 @@ Built with OpenClaw (agent runtime) · Supabase (database) · Next.js + Vercel (
 
 [Vercel]
   Next.js 15 (App Router)
-    / → article list
+    / → article list with summaries
 ```
 
 ---
@@ -58,7 +60,7 @@ ai-news-agent/
 | 2 | Supabase schema — create articles table, test connection | Done |
 | 3 | VPS provisioning — create VM, install Node.js | Pending |
 | 4 | OpenClaw setup — install on VPS, run gateway, hello-world | Pending |
-| 5 | RSS ingestion — fetch articles, deduplicate, write to Supabase | Done |
+| 5 | RSS ingestion — fetch, deduplicate, summarize via Ollama, write to Supabase | Done |
 | 6 | Cron scheduling — crontab entry, every 4 hours, logging | Pending |
 | 7 | Next.js frontend — article list, Tailwind CSS | Pending |
 | 8 | Vercel deployment — connect repo, set env vars, live URL | Pending |
@@ -71,7 +73,7 @@ ai-news-agent/
 ### Prerequisites
 - [ ] VPS provisioned (Oracle Always-Free / DigitalOcean / AWS)
 - [ ] Supabase project created
-- [ ] Ollama installed and accessible on VPS
+- [ ] Ollama cloud API key (ollama.com/settings/keys)
 - [ ] Vercel account connected to GitHub repo
 - [ ] Node.js 20+ installed on VPS
 
@@ -88,7 +90,7 @@ Copy `.env.example` to `.env` and fill in all values before running any agent.
 | Layer | Technology |
 |-------|------------|
 | Agent runtime | OpenClaw (npm) |
-| LLM | Ollama runtime |
+| LLM | Ollama cloud API (Ministral 3B) |
 | Database | Supabase (free tier) |
 | Frontend | Next.js 15, Tailwind CSS |
 | Hosting | Vercel (free tier) |

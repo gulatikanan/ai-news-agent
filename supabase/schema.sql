@@ -7,9 +7,13 @@ create table if not exists articles (
   url          text        not null unique,
   source       text        not null,
   published_at timestamptz,
+  summary      text,
   created_at   timestamptz not null default now()
 );
 
 -- Index for the frontend query: latest articles first
 create index if not exists articles_created_at_idx
   on articles (created_at desc);
+
+-- Migration: run this if the table already exists
+-- alter table articles add column if not exists summary text;

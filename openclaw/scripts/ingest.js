@@ -18,6 +18,30 @@ const FEEDS = [
   },
 ];
 
+async function summarizeArticle(title) {
+  const prompt = `Summarize this AI/ML news in 2-3 sentences. Developer-focused tone, factual, no hype:\n\n${title}`;
+
+  const res = await fetch('https://ollama.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'ministral-3:3b',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 150,
+    }),
+  });
+
+  if (!res.ok) throw new Error(`Ollama API returned ${res.status}`);
+
+  const json = await res.json();
+  const summary = json.choices?.[0]?.message?.content?.trim();
+  if (!summary) throw new Error('Empty response from Ollama');
+  return summary;
+}
+
 async function ingest() {
   const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -65,7 +89,30 @@ async function ingest() {
     process.exit(1);
   }
 
-  console.log(`Done. ${data.length} new articles inserted.`);
+  console.log(`${data.length} new articles inserted.`);
+
+  if (data.length === 0) return;
+
+  console.log(`\nSummarizing ${data.length} new articles...`);
+
+  for (const article of data) {
+    try {
+      const summary = await summarizeArticle(article.title);
+
+      const { error: updateError } = await supabase
+        .from('articles')
+        .update({ summary })
+        .eq('id', article.id);
+
+      if (updateError) throw new Error(updateError.message);
+
+      console.log(`  ✓ ${article.title.slice(0, 60)}...`);
+    } catch (err) {
+      console.error(`  ✗ Skipped "${article.title.slice(0, 60)}...": ${err.message}`);
+    }
+  }
+
+  console.log('Done.');
 }
 
 ingest().catch(err => {
