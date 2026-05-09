@@ -58,12 +58,12 @@ ai-news-agent/
 |-------|-------------|--------|
 | 1 | Repository foundation — folders, gitignore, README | Done |
 | 2 | Supabase schema — create articles table, test connection | Done |
-| 3 | VPS provisioning — create VM, install Node.js | Pending |
+| 3 | VPS provisioning — Azure VM, install Node.js | Pending |
 | 4 | OpenClaw setup — install on VPS, run gateway, hello-world | Pending |
 | 5 | RSS ingestion — fetch, deduplicate, summarize via Ollama, write to Supabase | Done |
 | 6 | Cron scheduling — crontab entry, every 4 hours, logging | Pending |
-| 7 | Next.js frontend — article list, Tailwind CSS | Pending |
-| 8 | Vercel deployment — connect repo, set env vars, live URL | Pending |
+| 7 | Next.js frontend — article list, Tailwind CSS | Done |
+| 8 | Vercel deployment — connect repo, set env vars, live URL | Done |
 | 9 | README polish — full redeploy instructions | Pending |
 
 ---
@@ -71,7 +71,7 @@ ai-news-agent/
 ## Setup Checklist
 
 ### Prerequisites
-- [ ] VPS provisioned (Oracle Always-Free / DigitalOcean / AWS)
+- [ ] VPS provisioned (Azure free trial — B1s Ubuntu VM)
 - [ ] Supabase project created
 - [ ] Ollama cloud API key (ollama.com/settings/keys)
 - [ ] Vercel account connected to GitHub repo
@@ -94,4 +94,5 @@ Copy `.env.example` to `.env` and fill in all values before running any agent.
 | Database | Supabase (free tier) |
 | Frontend | Next.js 15, Tailwind CSS |
 | Hosting | Vercel (free tier) |
-| Compute | VPS with free-credit cloud provider |
+| Hosting | Vercel (free tier) — https://ai-news-agent-black.vercel.app |
+| Compute | Azure B1s VM (free trial) |

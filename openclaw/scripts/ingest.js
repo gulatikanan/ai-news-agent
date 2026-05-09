@@ -78,7 +78,11 @@ async function ingest() {
           published_at: item.pubDate ? new Date(item.pubDate).toISOString() : null,
         }))
         .filter(a => a.title && a.url)
-        .filter(a => !feed.filter || isAIRelated(a.title));
+        .filter(a => !feed.filter || isAIRelated(a.title))
+        .filter(a => {
+          if (!a.published_at) return true;
+          return Date.now() - new Date(a.published_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+        });
 
       console.log(`  → ${items.length} articles parsed`);
       articles.push(...items);
