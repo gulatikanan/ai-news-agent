@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') }
 
 const Parser = require('rss-parser');
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const FEEDS = [
   {
@@ -59,7 +60,8 @@ async function summarizeArticle(title) {
 async function ingest() {
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { realtime: { transport: ws } }
   );
 
   const parser = new Parser();
