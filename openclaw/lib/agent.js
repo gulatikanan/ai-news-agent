@@ -1,5 +1,3 @@
-const openclaw = require('openclaw');
-
 class Agent {
   constructor(name, handler) {
     this.name = name;
