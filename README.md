@@ -11,17 +11,22 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 ## Architecture
 
 ```
-[Azure VPS]  ← Phase 3/4/6 in progress
-  cron (every 4 hours) → node scripts/ingest.js
+[Azure VPS — North Europe, B2ts v2]
+  cron (every 4 hours) → node scripts/run.js
 
-  ingest.js
-    → polls 3 RSS feeds: Google News · Hacker News · TechCrunch AI
-    → HN-only: keyword filter — only AI/ML relevant articles pass
-    → skips articles older than 7 days
-    → deduplicates by URL (Supabase upsert, conflict on url)
-    → calls Ollama cloud API (Ministral 3B) to summarize each new article
-    → try/catch: Ollama failure skips that article, ingestion continues
-    → writes articles + summaries to Supabase
+  run.js (orchestrator)
+    → collector agent
+        → polls 3 RSS feeds: Google News · Hacker News · TechCrunch AI
+        → HN-only: keyword filter — only AI/ML relevant articles pass
+        → skips articles older than 7 days
+        → deduplicates by URL (Supabase upsert, conflict on url)
+        → writes raw articles to Supabase
+    → summarizer agent
+        → queries Supabase for articles where summary IS NULL
+        → calls Ollama cloud API (Ministral 3B) per article
+        → try/catch: Ollama failure skips that article, run continues
+        → writes summaries back to Supabase
+    → logs all output to ~/ingest.log
 
         |
         | writes rows
@@ -40,7 +45,18 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
     / → AI-native news feed: hero · featured signal · source filters · article grid
 ```
 
-> **Current status:** Ingestion pipeline runs and Vercel frontend is live. VPS cron scheduling (phases 3–6) is in progress.
+---
+
+## Agent Design
+
+The pipeline uses two cooperating agents built on the OpenClaw runtime:
+
+| Agent | File | Responsibility |
+|---|---|---|
+| Collector | `scripts/collector.js` | Fetch RSS · filter · deduplicate · upsert to Supabase |
+| Summarizer | `scripts/summarizer.js` | Read unsummarized articles · call Ollama · write summaries |
+
+Both agents extend the `Agent` base class in `lib/agent.js`. The orchestrator (`run.js`) runs them in sequence — collector first, then summarizer picks up whatever was just inserted.
 
 ---
 
@@ -69,9 +85,14 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 ```
 ai-news-agent/
 ├── openclaw/
+│   ├── lib/
+│   │   └── agent.js           # Agent base class built on OpenClaw runtime
 │   ├── scripts/
-│   │   └── ingest.js        # RSS fetch + AI summarization pipeline
-│   ├── .env.example         # Required environment variables
+│   │   ├── run.js             # Orchestrator — runs collector then summarizer
+│   │   ├── collector.js       # Agent 1 — RSS fetch, filter, upsert to Supabase
+│   │   ├── summarizer.js      # Agent 2 — summarize unsummarized articles via Ollama
+│   │   └── ingest.js          # Legacy single-script pipeline (reference)
+│   ├── .env.example           # Required environment variables
 │   └── package.json
 ├── frontend/
 │   ├── app/
@@ -87,8 +108,8 @@ ai-news-agent/
 │   │   └── globals.css            # Keyframe animations: fadeInUp, orbFloat, pulseDot
 │   └── package.json
 ├── supabase/
-│   └── schema.sql           # Articles table schema
-├── docs/                    # Architecture notes
+│   └── schema.sql             # Articles table schema
+├── docs/                      # Architecture notes
 ├── .gitignore
 └── README.md
 ```
@@ -101,13 +122,13 @@ ai-news-agent/
 |-------|-------------|--------|
 | 1 | Repository foundation — folders, gitignore, README | Done |
 | 2 | Supabase schema — articles table, test connection | Done |
-| 3 | VPS provisioning — Azure B1s VM, install Node.js | Pending |
-| 4 | OpenClaw setup — install on VPS, run gateway | Pending |
+| 3 | VPS provisioning — Azure B2ts v2 VM, Node.js 20 | Done |
+| 4 | OpenClaw setup — installed on VPS, two-agent pipeline | Done |
 | 5 | RSS ingestion — fetch, filter, deduplicate, summarize via Ollama | Done |
-| 6 | Cron scheduling — every 4 hours, automatic pipeline | Pending |
+| 6 | Cron scheduling — every 4 hours, logs to ingest.log | Done |
 | 7 | Next.js frontend — premium AI-native UI, dark mode, featured signal | Done |
 | 8 | Vercel deployment — live at ai-news-agent-black.vercel.app | Done |
-| 9 | README polish — full VPS redeploy instructions | Pending |
+| 9 | README polish — full redeploy instructions | Done |
 
 ---
 
@@ -140,10 +161,16 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```bash
 cd openclaw
 npm install
-node scripts/ingest.js
+node scripts/run.js
 ```
 
-The script fetches all three feeds, upserts new articles to Supabase, then calls Ollama to summarize each new article. Existing articles are skipped (deduplication by URL). Ollama failures are caught per-article — the rest of the run continues.
+Runs the full two-agent pipeline: collector fetches and upserts articles, summarizer picks up any with missing summaries. Existing articles are skipped (deduplication by URL).
+
+To run a single agent:
+```bash
+node scripts/collector.js    # fetch + upsert only
+node scripts/summarizer.js   # summarize only
+```
 
 ### Running the Frontend Locally
 
@@ -162,9 +189,54 @@ Requires `frontend/.env.local` with Supabase credentials. Opens at `http://local
 3. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as Vercel environment variables.
 4. Deploy — Vercel auto-deploys on every push to `main`.
 
-### VPS + Cron Setup (in progress)
+### VPS Deployment (Azure)
 
-Full instructions will be added in Phase 9 once OpenClaw is running on the Azure VM and the cron job is confirmed stable.
+#### 1. Provision a VM
+- Provider: Azure (free trial — $200 credit)
+- Size: Standard B2ts v2 (2 vCPU, 1 GiB) — ~$8/month
+- Image: Ubuntu Server 24.04 LTS
+- Auth: SSH public key
+- Inbound ports: SSH (22)
+
+#### 2. Connect via SSH
+```bash
+ssh -i /path/to/key.pem azureuser@YOUR_VM_PUBLIC_IP
+```
+
+#### 3. Install Node.js 20
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+#### 4. Clone and configure
+```bash
+git clone https://github.com/gulatikanan/ai-news-agent.git
+cd ai-news-agent/openclaw
+npm install
+nano .env   # paste your SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OLLAMA_API_KEY
+```
+
+#### 5. Test the pipeline
+```bash
+node scripts/run.js
+```
+
+Should print collector and summarizer output ending with `=== done ===`.
+
+#### 6. Set up cron (every 4 hours)
+```bash
+crontab -e
+```
+Add this line:
+```
+0 */4 * * * cd /home/azureuser/ai-news-agent/openclaw && node scripts/run.js >> /home/azureuser/ingest.log 2>&1
+```
+
+#### 7. Check logs
+```bash
+tail -f ~/ingest.log
+```
 
 ---
 
@@ -177,4 +249,4 @@ Full instructions will be added in Phase 9 once OpenClaw is running on the Azure
 | Database | Supabase (free tier — hosted Postgres) |
 | Frontend | Next.js App Router, Tailwind CSS |
 | Hosting | Vercel (free tier) |
-| Compute | Azure B1s VM (free trial) |
+| Compute | Azure B2ts v2 VM (free trial) |
