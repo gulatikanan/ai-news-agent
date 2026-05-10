@@ -80,7 +80,7 @@ const THEMES = {
   },
 };
 
-export default function PageContent({ articles }) {
+export default function PageContent({ articles, runCount }) {
   const [mode, setMode]               = useState('dark');
   const [activeFilter, setActiveFilter] = useState('all');
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -209,7 +209,7 @@ export default function PageContent({ articles }) {
       </header>
 
       {/* Hero */}
-      <Hero t={t} articleCount={articles.length} lastUpdatedAt={lastUpdatedAt} />
+      <Hero t={t} articleCount={articles.length} lastUpdatedAt={lastUpdatedAt} runCount={runCount} />
 
       {/* Main content */}
       <main className="max-w-5xl mx-auto px-4" style={{ paddingBottom: 80 }}>

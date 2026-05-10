@@ -17,3 +17,16 @@ create index if not exists articles_created_at_idx
 
 -- Migration: run this if the table already exists
 -- alter table articles add column if not exists summary text;
+
+-- Observability: pipeline run log
+create table if not exists runs (
+  id                  uuid        primary key default gen_random_uuid(),
+  ran_at              timestamptz not null default now(),
+  articles_collected  integer     not null default 0,
+  articles_summarized integer     not null default 0,
+  status              text        not null default 'success',
+  error_msg           text,
+  duration_ms         integer
+);
+
+create index if not exists runs_ran_at_idx on runs (ran_at desc);

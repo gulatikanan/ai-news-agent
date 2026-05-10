@@ -2,7 +2,7 @@
 
 import { relativeTime } from '../lib/utils';
 
-export default function Hero({ t, articleCount, lastUpdatedAt }) {
+export default function Hero({ t, articleCount, lastUpdatedAt, runCount }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', padding: '72px 0 56px' }}>
 
@@ -84,6 +84,13 @@ export default function Hero({ t, articleCount, lastUpdatedAt }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: t.textPrimary, letterSpacing: '-0.02em' }}>3</span>
             <span style={{ fontSize: 11, color: t.textMuted, letterSpacing: '0.05em' }}>LIVE SOURCES</span>
+          </div>
+          <div style={{ width: 1, background: t.divider, alignSelf: 'stretch' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: t.accentEmerald, letterSpacing: '-0.02em' }}>
+              {runCount}
+            </span>
+            <span style={{ fontSize: 11, color: t.textMuted, letterSpacing: '0.05em' }}>PIPELINE RUNS</span>
           </div>
         </div>
       </div>
