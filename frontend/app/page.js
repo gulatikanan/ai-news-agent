@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import PageContent from './components/PageContent';
 
+export const dynamic = 'force-dynamic';
+
 async function getData() {
   const supabase = createClient(
     process.env.SUPABASE_URL,
