@@ -112,7 +112,6 @@ ai-news-agent/
 │   └── package.json
 ├── supabase/
 │   └── schema.sql             # Articles table schema
-├── docs/                      # Architecture notes
 ├── .gitignore
 └── README.md
 ```
@@ -125,7 +124,7 @@ ai-news-agent/
 |-------|-------------|--------|
 | 1 | Repository foundation — folders, gitignore, README | Done |
 | 2 | Supabase schema — articles table, test connection | Done |
-| 3 | VPS provisioning — Azure B2ts v2 VM, Node.js 20 | Done |
+| 3 | VPS provisioning — Azure B2ls v2 VM (4 GB), Node.js 22 | Done |
 | 4 | OpenClaw setup — installed on VPS, two-agent pipeline | Done |
 | 5 | RSS ingestion — fetch, filter, deduplicate, summarize via Ollama | Done |
 | 6 | OpenClaw integration — gateway daemon, Telegram pairing, cron every 4 hours | Done |
@@ -196,7 +195,7 @@ Requires `frontend/.env.local` with Supabase credentials. Opens at `http://local
 
 #### 1. Provision a VM
 - Provider: Azure (free trial — $200 credit)
-- Size: Standard B2ts v2 (2 vCPU, 1 GiB) — ~$8/month
+- Size: Standard B2ls v2 (2 vCPU, 4 GiB RAM) — OpenClaw npm install OOM-kills on 1 GB, 4 GB required
 - Image: Ubuntu Server 24.04 LTS
 - Auth: SSH public key
 - Inbound ports: SSH (22)
