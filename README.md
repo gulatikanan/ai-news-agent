@@ -38,6 +38,8 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 [Supabase — hosted Postgres]
   articles table
     id, title, url, source, published_at, summary, created_at
+  runs table
+    id, ran_at, articles_collected, articles_summarized, status, error_msg, duration_ms
 
         |
         | reads via Supabase JS client (server component, last 5 days)
