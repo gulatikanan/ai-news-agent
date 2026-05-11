@@ -11,8 +11,10 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 ## Architecture
 
 ```
-[Azure VPS — North Europe, B2ts v2]
-  cron (every 4 hours) → node scripts/run.js
+[Azure VPS — North Europe, B2ls v2]
+  OpenClaw gateway (systemd daemon, port 18789)
+    → OpenClaw cron (0 */4 * * *) → OpenClaw agent (ollama/ministral-3b)
+         → node scripts/run.js
 
   run.js (orchestrator)
     → collector agent
@@ -26,7 +28,8 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
         → calls Ollama cloud API (Ministral 3B) per article
         → try/catch: Ollama failure skips that article, run continues
         → writes summaries back to Supabase
-    → logs all output to ~/ingest.log
+    → OpenClaw sends Telegram message after each run (results summary)
+    → logs available via `openclaw logs --follow` on VPS
 
         |
         | writes rows
@@ -125,7 +128,7 @@ ai-news-agent/
 | 3 | VPS provisioning — Azure B2ts v2 VM, Node.js 20 | Done |
 | 4 | OpenClaw setup — installed on VPS, two-agent pipeline | Done |
 | 5 | RSS ingestion — fetch, filter, deduplicate, summarize via Ollama | Done |
-| 6 | Cron scheduling — every 4 hours, logs to ingest.log | Done |
+| 6 | OpenClaw integration — gateway daemon, Telegram pairing, cron every 4 hours | Done |
 | 7 | Next.js frontend — premium AI-native UI, dark mode, featured signal | Done |
 | 8 | Vercel deployment — live at ai-news-agent-black.vercel.app | Done |
 | 9 | README polish — full redeploy instructions | Done |
@@ -139,7 +142,7 @@ ai-news-agent/
 - Supabase project created (free tier)
 - Ollama cloud API key — [ollama.com/settings/keys](https://ollama.com/settings/keys)
 - Vercel account connected to this GitHub repo
-- Node.js 20+ (local or VPS)
+- Node.js 22+ on VPS (OpenClaw requires 22.12+)
 
 ### Environment Variables
 
@@ -203,10 +206,11 @@ Requires `frontend/.env.local` with Supabase credentials. Opens at `http://local
 ssh -i /path/to/key.pem azureuser@YOUR_VM_PUBLIC_IP
 ```
 
-#### 3. Install Node.js 20
+#### 3. Install Node.js 22 (OpenClaw requires 22.12+)
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
+node --version   # must show v22.x.x
 ```
 
 #### 4. Clone and configure
@@ -224,18 +228,51 @@ node scripts/run.js
 
 Should print collector and summarizer output ending with `=== done ===`.
 
-#### 6. Set up cron (every 4 hours)
+#### 6. Install OpenClaw and run onboarding
 ```bash
-crontab -e
-```
-Add this line:
-```
-0 */4 * * * cd /home/azureuser/ai-news-agent/openclaw && node scripts/run.js >> /home/azureuser/ingest.log 2>&1
+curl -fsSL https://openclaw.ai/install.sh | bash
+source ~/.bashrc
+openclaw onboard --install-daemon
 ```
 
-#### 7. Check logs
+At each prompt: provider = Ollama, base URL = `https://api.ollama.com`, model = `ministral-3b`, channel = Telegram (paste your bot token from @BotFather), install as daemon = yes.
+
+After onboarding, enable elevated tools in `~/.openclaw/openclaw.json`:
+```json
+"tools": { "elevated": { "enabled": true } }
+```
+Then restart: `openclaw gateway restart`
+
+#### 7. Pair your Telegram account
+Send any message to your bot → it replies with a code → run:
 ```bash
-tail -f ~/ingest.log
+openclaw pairing approve telegram YOUR_CODE
+```
+
+#### 8. Schedule the pipeline via OpenClaw cron
+```bash
+openclaw cron add \
+  --name "ai-news-pipeline" \
+  --cron "0 */4 * * *" \
+  --session isolated \
+  --announce \
+  --channel telegram \
+  --to "YOUR_TELEGRAM_CHAT_ID" \
+  --message "Use the exec tool to run this exact command: node scripts/run.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
+```
+
+Test immediately:
+```bash
+openclaw cron list                  # note the job ID
+openclaw cron run <job-id>
+openclaw logs --follow              # watch execution
+```
+
+You will receive a Telegram message with the run results.
+
+#### 9. Check logs
+```bash
+openclaw logs --follow
 ```
 
 ---
@@ -244,9 +281,10 @@ tail -f ~/ingest.log
 
 | Layer | Technology |
 |-------|------------|
-| Agent runtime | OpenClaw (npm) |
-| LLM | Ollama cloud API — Ministral 3B |
+| Agent runtime | OpenClaw 2026.5.7 (gateway + cron, systemd daemon) |
+| LLM | Ollama Cloud — `ministral-3b` |
+| Channel | Telegram bot (@Aipublication_bot) |
 | Database | Supabase (free tier — hosted Postgres) |
-| Frontend | Next.js App Router, Tailwind CSS |
+| Frontend | Next.js 15 App Router, Tailwind CSS |
 | Hosting | Vercel (free tier) |
-| Compute | Azure B2ts v2 VM (free trial) |
+| Compute | Azure B2ls v2 VM (2 vCPU, 4 GB RAM, free trial) |
