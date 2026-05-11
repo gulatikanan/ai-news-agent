@@ -187,15 +187,6 @@ export default function PageContent({ articles, runCount }) {
               ))}
             </div>
 
-            <div style={{ width: 1, height: 20, background: t.divider }} />
-
-            <a href="https://github.com/gulatikanan/ai-news-agent" target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 12, color: t.githubColor, textDecoration: 'none', transition: 'opacity 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.6'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-              GitHub →
-            </a>
-
             <button onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}
               style={{
                 padding: '5px 12px', borderRadius: 20, border: 'none',

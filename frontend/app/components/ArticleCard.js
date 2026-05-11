@@ -155,6 +155,38 @@ const ArticleCard = forwardRef(function ArticleCard({ t, article, index, isFocus
           ))}
         </div>
       )}
+
+      {/* View Article button */}
+      <a
+        href={article.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'inline-block',
+          marginTop: 4,
+          padding: '7px 14px',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 600,
+          color: t.accent,
+          border: `1px solid ${t.accent}`,
+          background: 'transparent',
+          textDecoration: 'none',
+          textAlign: 'center',
+          transition: 'background 0.15s, color 0.15s',
+          alignSelf: 'flex-start',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = t.accent;
+          e.currentTarget.style.color = '#fff';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = t.accent;
+        }}
+      >
+        View Article →
+      </a>
     </div>
   );
 });
