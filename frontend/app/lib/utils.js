@@ -48,9 +48,14 @@ export function generateTags(title, summary = '') {
 export function extractWhyMatters(summary) {
   if (!summary) return null;
   let clean = stripMarkdown(summary);
-  clean = clean.replace(/^here['']?s\s+.{0,60}?summary\s*[:\-]\s*/i, '').trim();
+  // Strip opening preamble e.g. "Here's a concise, developer-focused summary:\n\n"
+  clean = clean.replace(/^here['']?s\s+.{0,80}?summary\s*[:\-]\s*/i, '').trim();
+  // Strip inline section labels e.g. "The key takeaway:", "Bottom line:"
+  clean = clean.replace(/\b(the\s+)?(key\s+(takeaway|insight)|bottom\s+line|tl;?dr|in\s+short)\s*:\s*/gi, '');
   const sentences = clean.split(/\.(?:\s|$)/).map(s => s.trim()).filter(s => s.length > 25);
   if (sentences.length < 1) return null;
-  const last = sentences[sentences.length - 1];
-  return last.length > 25 && last.length < 180 ? last : null;
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    if (sentences[i].length > 25 && sentences[i].length < 240) return sentences[i];
+  }
+  return null;
 }
