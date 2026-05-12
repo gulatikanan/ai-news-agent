@@ -88,7 +88,7 @@ Within Agent 1, two internal agents run in sequence:
   - `NEW` badge for articles published in the last 24 h
   - AI-generated summary (line-clamped to 4 lines)
   - "Why this matters" pull-quote (last sentence of summary, highlighted)
-  - Auto-generated topic tags (`#llm`, `#agents`, `#rag`, etc.) from title + summary
+  - AI-generated topic tags from Supabase (set by tagger agent, falls back to client-side keyword matching)
   - Hover: lift + border glow
 - **Empty state** — shown when a filtered source has no articles yet
 
@@ -103,8 +103,9 @@ ai-news-agent/
 │   │   └── agent.js           # Agent base class built on OpenClaw runtime
 │   ├── scripts/
 │   │   ├── run.js             # Orchestrator — runs collector then summarizer
-│   │   ├── collector.js       # Agent 1 — RSS fetch, filter, upsert to Supabase
-│   │   ├── summarizer.js      # Agent 2 — summarize unsummarized articles via Ollama
+│   │   ├── collector.js       # RSS fetch, filter, upsert to Supabase
+│   │   ├── summarizer.js      # Summarize unsummarized articles via Ollama
+│   │   ├── tagger.js          # AI tag generation — called by OpenClaw Agent 2
 │   │   └── ingest.js          # Legacy single-script pipeline (reference)
 │   ├── .env.example           # Required environment variables
 │   └── package.json
@@ -183,6 +184,7 @@ To run a single agent:
 ```bash
 node scripts/collector.js    # fetch + upsert only
 node scripts/summarizer.js   # summarize only
+node scripts/tagger.js       # tag only
 ```
 
 ### Running the Frontend Locally
@@ -259,28 +261,76 @@ Send any message to your bot → it replies with a code → run:
 openclaw pairing approve telegram YOUR_CODE
 ```
 
-#### 8. Schedule the pipeline via OpenClaw cron
-```bash
-openclaw cron add \
-  --name "ai-news-pipeline" \
-  --cron "0 */4 * * *" \
-  --session isolated \
-  --announce \
-  --channel telegram \
-  --to "YOUR_TELEGRAM_CHAT_ID" \
-  --message "Use the exec tool to run this exact command: node scripts/run.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
+#### 8. Add tags column to Supabase
+
+In your Supabase dashboard → SQL Editor, run:
+```sql
+alter table articles add column if not exists tags text[];
 ```
 
-Test immediately:
+#### 9. Enable OpenClaw hooks
 ```bash
-openclaw cron list                  # note the job ID
-openclaw cron run <job-id>
-openclaw logs --follow              # watch execution
+openclaw hooks enable boot-md
+openclaw hooks enable command-logger
 ```
 
-You will receive a Telegram message with the run results.
+Create the BOOT.md context file:
+```bash
+nano ~/.openclaw/workspace/BOOT.md
+```
 
-#### 9. Check logs
+Paste this content:
+```markdown
+# AI News Agent — System Context
+
+You are the AI agent for an autonomous news collection system that collects and summarizes AI/ML engineering news every 4 hours.
+
+## Pipeline Scripts
+
+All scripts are in `/home/azureuser/ai-news-agent/openclaw/scripts/`
+
+- `run.js` — Orchestrator: runs collector then summarizer in sequence
+- `collector.js` — Fetches RSS feeds → inserts into Supabase
+- `summarizer.js` — Reads articles without summaries → calls Ollama → writes summaries
+- `tagger.js` — Reads summarized articles without tags → calls Ollama → writes tags
+
+## When Running Scripts
+
+Always use the exec tool with workdir `/home/azureuser/ai-news-agent/openclaw`. Never use sudo.
+
+## Reporting
+
+After every script run, report: articles collected/summarized/tagged, any errors, and total duration.
+```
+
+Save with Ctrl+O → Enter → Ctrl+X. Then restart:
+```bash
+openclaw gateway restart
+```
+
+#### 10. Schedule both OpenClaw cron agents
+
+Agent 1 — main pipeline (collector + summarizer):
+```bash
+openclaw cron add --name "ai-news-pipeline" --cron "0 */4 * * *" --session isolated --announce --channel telegram --to "YOUR_TELEGRAM_CHAT_ID" --message "Use the exec tool to run this exact command: node scripts/run.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
+```
+
+Agent 2 — tagger (runs 2 minutes after Agent 1):
+```bash
+openclaw cron add --name "tagger-agent" --cron "2 */4 * * *" --session isolated --announce --channel telegram --to "YOUR_TELEGRAM_CHAT_ID" --message "Use the exec tool to run this exact command: node scripts/tagger.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
+```
+
+Test both immediately:
+```bash
+openclaw cron list                     # note both job IDs
+openclaw cron run <agent1-job-id>
+openclaw cron run <agent2-job-id>
+openclaw logs --follow                 # watch execution
+```
+
+You will receive two Telegram messages — one from each agent.
+
+#### 11. Check logs
 ```bash
 openclaw logs --follow
 ```
