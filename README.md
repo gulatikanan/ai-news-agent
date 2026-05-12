@@ -72,6 +72,11 @@ Within Agent 1, two internal agents run in sequence:
 | `boot-md` | Injects `BOOT.md` system context into every agent session on gateway startup |
 | `command-logger` | Logs all agent exec commands to a centralized audit file |
 
+**OpenClaw Skills installed:**
+| Skill | Trigger | Capability |
+|---|---|---|
+| `news-pipeline` | Pipeline monitoring queries via Telegram | Check status · article counts · run history · trigger manual runs |
+
 ---
 
 ## Frontend Features
@@ -107,6 +112,10 @@ ai-news-agent/
 │   │   ├── summarizer.js      # Summarize unsummarized articles via Ollama
 │   │   ├── tagger.js          # AI tag generation — called by OpenClaw Agent 2
 │   │   └── ingest.js          # Legacy single-script pipeline (reference)
+│   ├── skills/
+│   │   └── news-pipeline/
+│   │       └── SKILL.md       # Custom OpenClaw skill — pipeline monitoring via Telegram
+│   ├── BOOT.md                # System context injected into every agent session via boot-md hook
 │   ├── .env.example           # Required environment variables
 │   └── package.json
 ├── frontend/
@@ -284,7 +293,17 @@ Then restart:
 openclaw gateway restart
 ```
 
-#### 10. Schedule both OpenClaw cron agents
+#### 10. Install the news-pipeline skill
+
+```bash
+mkdir -p ~/.openclaw/workspace/skills/news-pipeline
+cp /home/azureuser/ai-news-agent/openclaw/skills/news-pipeline/SKILL.md ~/.openclaw/workspace/skills/news-pipeline/SKILL.md
+openclaw gateway restart
+```
+
+After restart, send your Telegram bot any pipeline monitoring question (e.g. "Is the pipeline healthy?" or "Show me the last run status") and the agent will use this skill to query Supabase and respond.
+
+#### 11. Schedule both OpenClaw cron agents
 
 Agent 1 — main pipeline (collector + summarizer):
 ```bash
