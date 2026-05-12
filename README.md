@@ -13,23 +13,21 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 ```
 [Azure VPS — North Europe, B2ls v2]
   OpenClaw gateway (systemd daemon, port 18789)
-    → OpenClaw cron (0 */4 * * *) → OpenClaw agent (ollama/ministral-3b)
-         → node scripts/run.js
+    → boot-md hook: injects BOOT.md system context into every agent session on startup
+    → command-logger hook: logs all agent exec commands to audit file
 
-  run.js (orchestrator)
-    → collector agent
-        → polls 3 RSS feeds: Google News · Hacker News · TechCrunch AI
-        → HN-only: keyword filter — only AI/ML relevant articles pass
-        → skips articles older than 7 days
-        → deduplicates by URL (Supabase upsert, conflict on url)
-        → writes raw articles to Supabase
-    → summarizer agent
-        → queries Supabase for articles where summary IS NULL
-        → calls Ollama cloud API (Ministral 3B) per article
-        → try/catch: Ollama failure skips that article, run continues
-        → writes summaries back to Supabase
-    → OpenClaw sends Telegram message after each run (results summary)
-    → logs available via `openclaw logs --follow` on VPS
+    → OpenClaw cron job 1 (0 */4 * * *) → OpenClaw agent 1 (ollama/ministral-3b)
+         → node scripts/run.js
+              → collector: polls 3 RSS feeds · filters · deduplicates · upserts to Supabase
+              → summarizer: reads summary IS NULL · calls Ollama · writes summaries back
+         → Telegram message 1: collected/summarized counts
+
+    → OpenClaw cron job 2 (2 */4 * * *) → OpenClaw agent 2 (ollama/ministral-3b)
+         → node scripts/tagger.js
+              → reads articles with summary but no tags
+              → calls Ollama: categorize into [llm, agents, open-source, research, tools, industry, hardware, security, data]
+              → writes tags array to Supabase
+         → Telegram message 2: tagged count
 
         |
         | writes rows
@@ -37,7 +35,7 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 
 [Supabase — hosted Postgres]
   articles table
-    id, title, url, source, published_at, summary, created_at
+    id, title, url, source, published_at, summary, tags, created_at
   runs table
     id, ran_at, articles_collected, articles_summarized, status, error_msg, duration_ms
 
@@ -54,14 +52,25 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 
 ## Agent Design
 
-The pipeline uses two cooperating agents built on the OpenClaw runtime:
+The pipeline uses two OpenClaw cron agents cooperating through Supabase:
 
-| Agent | File | Responsibility |
+| OpenClaw Agent | Cron | Script | Responsibility |
+|---|---|---|---|
+| Agent 1 | `0 */4 * * *` | `run.js` | Orchestrates collector + summarizer in sequence |
+| Agent 2 | `2 */4 * * *` | `tagger.js` | Reads summarized articles · calls Ollama · writes tags |
+
+Within Agent 1, two internal agents run in sequence:
+
+| Internal Agent | File | Responsibility |
 |---|---|---|
 | Collector | `scripts/collector.js` | Fetch RSS · filter · deduplicate · upsert to Supabase |
 | Summarizer | `scripts/summarizer.js` | Read unsummarized articles · call Ollama · write summaries |
 
-Both agents extend the `Agent` base class in `lib/agent.js`. The orchestrator (`run.js`) runs them in sequence — collector first, then summarizer picks up whatever was just inserted.
+**OpenClaw Hooks enabled:**
+| Hook | Purpose |
+|---|---|
+| `boot-md` | Injects `BOOT.md` system context into every agent session on gateway startup |
+| `command-logger` | Logs all agent exec commands to a centralized audit file |
 
 ---
 
