@@ -95,6 +95,7 @@ Within Agent 1, two internal agents run in sequence:
   - "Why this matters" pull-quote (last sentence of summary, highlighted)
   - AI-generated topic tags from Supabase (set by tagger agent, falls back to client-side keyword matching)
   - Hover: lift + border glow
+  - "View Article" button — opens original source in new tab
 - **Empty state** — shown when a filtered source has no articles yet
 
 ---
@@ -151,7 +152,10 @@ ai-news-agent/
 | 6 | OpenClaw integration — gateway daemon, Telegram pairing, cron every 4 hours | Done |
 | 7 | Next.js frontend — premium AI-native UI, dark mode, featured signal | Done |
 | 8 | Vercel deployment — live at ai-news-agent-black.vercel.app | Done |
-| 9 | README polish — full redeploy instructions | Done |
+| 9 | Tagger agent — second OpenClaw cron agent, AI tags stored in Supabase | Done |
+| 10 | OpenClaw hooks — boot-md (BOOT.md context injection) + command-logger (audit trail) | Done |
+| 11 | Custom OpenClaw skill — news-pipeline skill for Telegram pipeline monitoring | Done |
+| 12 | README polish — full redeploy instructions | Done |
 
 ---
 
@@ -305,6 +309,7 @@ After restart, send your Telegram bot any pipeline monitoring question (e.g. "Is
 
 #### 11. Schedule both OpenClaw cron agents
 
+
 Agent 1 — main pipeline (collector + summarizer):
 ```bash
 openclaw cron add --name "ai-news-pipeline" --cron "0 */4 * * *" --session isolated --announce --channel telegram --to "YOUR_TELEGRAM_CHAT_ID" --message "Use the exec tool to run this exact command: node scripts/run.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
@@ -325,7 +330,7 @@ openclaw logs --follow                 # watch execution
 
 You will receive two Telegram messages — one from each agent.
 
-#### 11. Check logs
+#### 12. Check logs
 ```bash
 openclaw logs --follow
 ```
