@@ -48,7 +48,7 @@ export function generateTags(title, summary = '') {
 export function extractWhyMatters(summary) {
   if (!summary) return null;
   let clean = stripMarkdown(summary);
-  clean = clean.replace(/^here['']?s\s+a?\s*\w*[\s\-]*summary\s*[:\-]\s*/i, '').trim();
+  clean = clean.replace(/^here['']?s\s+.{0,60}?summary\s*[:\-]\s*/i, '').trim();
   const sentences = clean.split(/\.(?:\s|$)/).map(s => s.trim()).filter(s => s.length > 25);
   if (sentences.length < 1) return null;
   const last = sentences[sentences.length - 1];
