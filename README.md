@@ -29,6 +29,12 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
               → writes tags array to Supabase
          → Telegram message 2: tagged count
 
+    → OpenClaw cron job 3 (30 */4 * * *) → OpenClaw agent 3 (ollama/ministral-3b)
+         → node scripts/healthcheck.js
+              → queries runs table for last run
+              → checks status and age (alerts if error or >5h since last run)
+         → Telegram message 3: HEALTH OK or HEALTH ALERT with details
+
         |
         | writes rows
         v
@@ -58,6 +64,7 @@ The pipeline uses two OpenClaw cron agents cooperating through Supabase:
 |---|---|---|---|
 | Agent 1 | `0 */4 * * *` | `run.js` | Orchestrates collector + summarizer in sequence |
 | Agent 2 | `2 */4 * * *` | `tagger.js` | Reads summarized articles · calls Ollama · writes tags |
+| Agent 3 | `30 */4 * * *` | `healthcheck.js` | Checks last run status · sends HEALTH OK or HEALTH ALERT to Telegram |
 
 Within Agent 1, two internal agents run in sequence:
 
@@ -112,6 +119,7 @@ ai-news-agent/
 │   │   ├── collector.js       # RSS fetch, filter, upsert to Supabase
 │   │   ├── summarizer.js      # Summarize unsummarized articles via Ollama
 │   │   ├── tagger.js          # AI tag generation — called by OpenClaw Agent 2
+│   │   ├── healthcheck.js     # Pipeline health monitor — called by OpenClaw Agent 3
 │   │   └── ingest.js          # Legacy single-script pipeline (reference)
 │   ├── skills/
 │   │   └── news-pipeline/
@@ -155,7 +163,8 @@ ai-news-agent/
 | 9 | Tagger agent — second OpenClaw cron agent, AI tags stored in Supabase | Done |
 | 10 | OpenClaw hooks — boot-md (BOOT.md context injection) + command-logger (audit trail) | Done |
 | 11 | Custom OpenClaw skill — news-pipeline skill for Telegram pipeline monitoring | Done |
-| 12 | README polish — full redeploy instructions | Done |
+| 12 | Health monitor agent — Agent 3 checks pipeline status every 4h, Telegram alert on failure | Done |
+| 13 | README polish — full redeploy instructions | Done |
 
 ---
 
@@ -320,15 +329,21 @@ Agent 2 — tagger (runs 2 minutes after Agent 1):
 openclaw cron add --name "tagger-agent" --cron "2 */4 * * *" --session isolated --announce --channel telegram --to "YOUR_TELEGRAM_CHAT_ID" --message "Use the exec tool to run this exact command: node scripts/tagger.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
 ```
 
-Test both immediately:
+Agent 3 — health monitor (runs 30 minutes after Agent 1):
 ```bash
-openclaw cron list                     # note both job IDs
+openclaw cron add --name "health-monitor" --cron "30 */4 * * *" --session isolated --announce --channel telegram --to "YOUR_TELEGRAM_CHAT_ID" --message "Use the exec tool to run this exact command: node scripts/healthcheck.js in workdir /home/azureuser/ai-news-agent/openclaw. Do not use sudo. Just run that command and report the output."
+```
+
+Test all three immediately:
+```bash
+openclaw cron list                     # note all job IDs
 openclaw cron run <agent1-job-id>
 openclaw cron run <agent2-job-id>
+openclaw cron run <agent3-job-id>
 openclaw logs --follow                 # watch execution
 ```
 
-You will receive two Telegram messages — one from each agent.
+You will receive three Telegram messages — one from each agent.
 
 #### 12. Check logs
 ```bash

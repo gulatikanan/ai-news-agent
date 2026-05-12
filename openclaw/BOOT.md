@@ -10,6 +10,7 @@ All scripts are in `/home/azureuser/ai-news-agent/openclaw/scripts/`
 - `collector.js` — Fetches RSS feeds (Hacker News, TechCrunch, Google News) → inserts into Supabase
 - `summarizer.js` — Reads articles without summaries → calls Ollama → writes summaries to Supabase
 - `tagger.js` — Reads summarized articles without tags → calls Ollama → writes tags to Supabase
+- `healthcheck.js` — Checks last pipeline run: prints HEALTH OK or HEALTH ALERT with details
 
 ## When Running Scripts
 
