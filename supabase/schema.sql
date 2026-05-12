@@ -8,6 +8,7 @@ create table if not exists articles (
   source       text        not null,
   published_at timestamptz,
   summary      text,
+  tags         text[],
   created_at   timestamptz not null default now()
 );
 
@@ -15,8 +16,9 @@ create table if not exists articles (
 create index if not exists articles_created_at_idx
   on articles (created_at desc);
 
--- Migration: run this if the table already exists
+-- Migrations: run these if the table already exists
 -- alter table articles add column if not exists summary text;
+-- alter table articles add column if not exists tags text[];
 
 -- Observability: pipeline run log
 create table if not exists runs (

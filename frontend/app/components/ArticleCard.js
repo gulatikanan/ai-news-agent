@@ -26,7 +26,7 @@ const ArticleCard = forwardRef(function ArticleCard({ t, article, index, isFocus
   const [hovered, setHovered] = useState(false);
 
   const summary = stripMarkdown(article.summary || '');
-  const tags = generateTags(article.title, summary);
+  const tags = (article.tags && article.tags.length > 0) ? article.tags : generateTags(article.title, summary);
   const whyMatters = extractWhyMatters(summary);
   const sc = (SOURCE_COLORS[mode] || SOURCE_COLORS.dark)[article.source] || { bg: 'rgba(255,255,255,0.06)', text: '#9CA3AF', border: 'rgba(255,255,255,0.1)' };
 

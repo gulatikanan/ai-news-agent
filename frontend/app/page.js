@@ -14,7 +14,7 @@ async function getData() {
   const [articlesRes, runsRes] = await Promise.all([
     supabase
       .from('articles')
-      .select('id, title, url, source, published_at, summary, created_at')
+      .select('id, title, url, source, published_at, summary, tags, created_at')
       .gte('published_at', fiveDaysAgo)
       .order('published_at', { ascending: false })
       .limit(100),
