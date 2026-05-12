@@ -274,36 +274,12 @@ openclaw hooks enable boot-md
 openclaw hooks enable command-logger
 ```
 
-Create the BOOT.md context file:
+Copy the BOOT.md from the repo into the OpenClaw workspace:
 ```bash
-nano ~/.openclaw/workspace/BOOT.md
+cp /home/azureuser/ai-news-agent/openclaw/BOOT.md ~/.openclaw/workspace/BOOT.md
 ```
 
-Paste this content:
-```markdown
-# AI News Agent — System Context
-
-You are the AI agent for an autonomous news collection system that collects and summarizes AI/ML engineering news every 4 hours.
-
-## Pipeline Scripts
-
-All scripts are in `/home/azureuser/ai-news-agent/openclaw/scripts/`
-
-- `run.js` — Orchestrator: runs collector then summarizer in sequence
-- `collector.js` — Fetches RSS feeds → inserts into Supabase
-- `summarizer.js` — Reads articles without summaries → calls Ollama → writes summaries
-- `tagger.js` — Reads summarized articles without tags → calls Ollama → writes tags
-
-## When Running Scripts
-
-Always use the exec tool with workdir `/home/azureuser/ai-news-agent/openclaw`. Never use sudo.
-
-## Reporting
-
-After every script run, report: articles collected/summarized/tagged, any errors, and total duration.
-```
-
-Save with Ctrl+O → Enter → Ctrl+X. Then restart:
+Then restart:
 ```bash
 openclaw gateway restart
 ```
