@@ -58,7 +58,7 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 
 ## Agent Design
 
-The pipeline uses two OpenClaw cron agents cooperating through Supabase:
+The pipeline uses three OpenClaw cron agents cooperating through Supabase:
 
 | OpenClaw Agent | Cron | Script | Responsibility |
 |---|---|---|---|
@@ -207,6 +207,7 @@ To run a single agent:
 node scripts/collector.js    # fetch + upsert only
 node scripts/summarizer.js   # summarize only
 node scripts/tagger.js       # tag only
+node scripts/healthcheck.js  # check pipeline health
 ```
 
 ### Running the Frontend Locally
@@ -316,8 +317,7 @@ openclaw gateway restart
 
 After restart, send your Telegram bot any pipeline monitoring question (e.g. "Is the pipeline healthy?" or "Show me the last run status") and the agent will use this skill to query Supabase and respond.
 
-#### 11. Schedule both OpenClaw cron agents
-
+#### 11. Schedule all three OpenClaw cron agents
 
 Agent 1 — main pipeline (collector + summarizer):
 ```bash
