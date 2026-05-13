@@ -6,7 +6,7 @@
 
 ### 1.1 Product Summary
 
-AI Engineering News is an autonomous newsroom that collects, summarizes, and displays AI/ML engineering news without any human intervention after initial deployment. The system runs entirely on a scheduled basis: three cooperative AI agents fetch RSS feeds, generate summaries, apply topic tags, and monitor their own health every four hours.
+AI Engineering News is an autonomous newsroom that collects, summarizes, and displays AI/ML engineering news without any human intervention after initial deployment. The system runs on a single OpenClaw gateway with three cron-scheduled LLM sessions that fetch RSS feeds, generate summaries, apply topic tags, and monitor pipeline health every four hours.
 
 ### 1.2 Problem Statement
 
@@ -92,19 +92,23 @@ AI/ML engineers need to stay current with a rapidly evolving field, but relevant
 
 ## 4. Agent Design
 
-### 4.1 Agent 1 — Pipeline Orchestrator (run.js)
+> **Important:** There is one OpenClaw gateway (a systemd process on the VPS). It is not three separate OpenClaws. The gateway has three cron schedules configured; each schedule fires an independent, isolated LLM session when triggered. Each session completes its task, reports to Telegram, and terminates — no memory persists between firings. These sessions are referred to as Agent 1, 2, and 3 for clarity.
+
+### 4.1 Agent Session 1 — Pipeline Orchestrator (run.js)
 
 **Trigger:** OpenClaw cron, `0 */4 * * *`  
 **Session:** Isolated (no memory across firings)  
 **LLM:** ministral-3b via Ollama Cloud
 
-**Collector sub-agent** (`collector.js`):
+The LLM uses the OpenClaw `exec` tool to run `node scripts/run.js`, which internally calls two Node.js scripts in sequence:
+
+**Collector** (`collector.js`):
 - Fetches RSS from Hacker News (AI/ML filter), TechCrunch AI, Google News AI
 - Filters: title must match AI/ML keyword list; minimum 10 articles per source
 - Deduplicates by URL using Supabase upsert with `onConflict: 'url'`
 - Writes to `articles` table; logs run metadata to `runs` table
 
-**Summarizer sub-agent** (`summarizer.js`):
+**Summarizer** (`summarizer.js`):
 - Queries `articles WHERE summary IS NULL` — NULL column acts as a retry queue
 - Calls Ollama `ministral-3b` with a developer-focused prompt
 - Writes summary back to Supabase
@@ -112,7 +116,7 @@ AI/ML engineers need to stay current with a rapidly evolving field, but relevant
 
 **Output:** Telegram message with collected and summarized counts
 
-### 4.2 Agent 2 — Tagger (tagger.js)
+### 4.2 Agent Session 2 — Tagger (tagger.js)
 
 **Trigger:** OpenClaw cron, `2 */4 * * *` (2 min after Agent 1)  
 **Session:** Isolated  
@@ -125,7 +129,7 @@ AI/ML engineers need to stay current with a rapidly evolving field, but relevant
 
 **Inter-agent coordination:** Agents do not call each other. They coordinate through Supabase state — NULL fields signal pending work. This is the [blackboard pattern](https://en.wikipedia.org/wiki/Blackboard_(design_pattern)).
 
-### 4.3 Agent 3 — Health Monitor (healthcheck.js)
+### 4.3 Agent Session 3 — Health Monitor (healthcheck.js)
 
 **Trigger:** OpenClaw cron, `30 */4 * * *` (30 min after Agent 1)  
 **Session:** Isolated  
@@ -181,7 +185,7 @@ An interactive skill installed in the OpenClaw workspace. When the user sends a 
 
 ### 5.3 Access
 
-The OpenClaw agents and the Next.js frontend both use the **Supabase service role key** — this grants full admin access and bypasses Row Level Security. Appropriate for a single-tenant autonomous system with no end-user auth.
+The cron-scheduled agent sessions and the Next.js frontend both use the **Supabase service role key** — this grants full admin access and bypasses Row Level Security. Appropriate for a single-tenant autonomous system with no end-user auth.
 
 ---
 
@@ -261,15 +265,15 @@ The OpenClaw agents and the Next.js frontend both use the **Supabase service rol
 
 ### 8.1 Telegram Alerts
 
-Three agents each send a Telegram message after every run:
+Each of the three cron sessions sends a Telegram message after every run:
 
-| Agent | Message |
-|-------|---------|
-| Agent 1 | Collected N articles, summarized M |
-| Agent 2 | Tagged N articles |
-| Agent 3 | HEALTH OK (last run age + counts) or HEALTH ALERT (status + error details) |
+| Session | Message |
+|---------|---------|
+| Session 1 (run.js) | Collected N articles, summarized M |
+| Session 2 (tagger.js) | Tagged N articles |
+| Session 3 (healthcheck.js) | HEALTH OK (last run age + counts) or HEALTH ALERT (status + error details) |
 
-### 8.2 Health Check Logic (Agent 3)
+### 8.2 Health Check Logic (Session 3)
 
 - HEALTH ALERT conditions:
   - Last run `status = 'error'`

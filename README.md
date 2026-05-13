@@ -58,17 +58,17 @@ Built with OpenClaw · Supabase · Next.js · Vercel · Ollama
 
 ## Agent Design
 
-The pipeline uses three OpenClaw cron agents cooperating through Supabase:
+There is one OpenClaw gateway (a systemd daemon on the VPS). It is not three separate OpenClaws. The gateway has three cron schedules; each fires an independent, isolated LLM session that runs its script, reports to Telegram, and terminates.
 
-| OpenClaw Agent | Cron | Script | Responsibility |
+| Cron Session | Cron | Script | Responsibility |
 |---|---|---|---|
-| Agent 1 | `0 */4 * * *` | `run.js` | Orchestrates collector + summarizer in sequence |
-| Agent 2 | `2 */4 * * *` | `tagger.js` | Reads summarized articles · calls Ollama · writes tags |
-| Agent 3 | `30 */4 * * *` | `healthcheck.js` | Checks last run status · sends HEALTH OK or HEALTH ALERT to Telegram |
+| Session 1 | `0 */4 * * *` | `run.js` | Orchestrates collector + summarizer in sequence |
+| Session 2 | `2 */4 * * *` | `tagger.js` | Reads summarized articles · calls Ollama · writes tags |
+| Session 3 | `30 */4 * * *` | `healthcheck.js` | Checks last run status · sends HEALTH OK or HEALTH ALERT to Telegram |
 
-Within Agent 1, two internal agents run in sequence:
+Within Session 1, `run.js` calls two Node.js scripts in sequence (these are scripts, not OpenClaw sessions):
 
-| Internal Agent | File | Responsibility |
+| Script | File | Responsibility |
 |---|---|---|
 | Collector | `scripts/collector.js` | Fetch RSS · filter · deduplicate · upsert to Supabase |
 | Summarizer | `scripts/summarizer.js` | Read unsummarized articles · call Ollama · write summaries |
