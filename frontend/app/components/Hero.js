@@ -48,7 +48,7 @@ export default function Hero({ t, articleCount, lastUpdatedAt, runCount }) {
         }}>
           AI Engineering
           <br />
-          <span style={{ background: `linear-gradient(135deg, ${t.accent} 0%, ${t.accentCyan} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ background: `linear-gradient(135deg, ${t.accent} 0%, ${t.accentCyan} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', display: 'inline-block' }}>
             Intelligence
           </span>
         </h1>
