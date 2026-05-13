@@ -200,7 +200,7 @@ export default function PageContent({ articles, runCount }) {
       </header>
 
       {/* Hero */}
-      <Hero t={t} articleCount={articles.length} lastUpdatedAt={lastUpdatedAt} runCount={runCount} />
+      <Hero t={t} mode={mode} articleCount={articles.length} lastUpdatedAt={lastUpdatedAt} runCount={runCount} />
 
       {/* Main content */}
       <main className="max-w-5xl mx-auto px-4" style={{ paddingBottom: 80 }}>

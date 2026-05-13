@@ -2,7 +2,7 @@
 
 import { relativeTime } from '../lib/utils';
 
-export default function Hero({ t, articleCount, lastUpdatedAt, runCount }) {
+export default function Hero({ t, mode, articleCount, lastUpdatedAt, runCount }) {
   return (
     <section style={{ position: 'relative', overflow: 'hidden', padding: '72px 0 56px' }}>
 
@@ -48,7 +48,14 @@ export default function Hero({ t, articleCount, lastUpdatedAt, runCount }) {
         }}>
           AI Engineering
           <br />
-          <span style={{ background: `linear-gradient(135deg, ${t.accent} 0%, ${t.accentCyan} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent', display: 'inline-block' }}>
+          <span style={mode === 'dark' ? {
+            background: `linear-gradient(135deg, ${t.accent} 0%, ${t.accentCyan} 100%)`,
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            color: 'transparent',
+            display: 'inline-block',
+          } : { color: t.accent }}>
             Intelligence
           </span>
         </h1>
