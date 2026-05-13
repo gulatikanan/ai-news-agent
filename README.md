@@ -157,16 +157,17 @@ ai-news-agent/
 | 1 | Repository foundation — folders, gitignore, README | Done |
 | 2 | Supabase schema — articles table, test connection | Done |
 | 3 | VPS provisioning — Azure B2ls v2 VM (4 GB), Node.js 22 | Done |
-| 4 | OpenClaw setup — installed on VPS, two-agent pipeline | Done |
+| 4 | OpenClaw setup — installed on VPS, gateway daemon, first cron session wired up | Done |
 | 5 | RSS ingestion — fetch, filter, deduplicate, summarize via Ollama | Done |
-| 6 | OpenClaw integration — gateway daemon, Telegram pairing, cron every 4 hours | Done |
+| 6 | OpenClaw integration — Telegram pairing, cron every 4 hours, isolated sessions | Done |
 | 7 | Next.js frontend — premium AI-native UI, dark mode, featured signal | Done |
 | 8 | Vercel deployment — live at ai-news-agent-black.vercel.app | Done |
-| 9 | Tagger agent — second OpenClaw cron agent, AI tags stored in Supabase | Done |
+| 9 | Tagger — second cron session, AI tags stored in Supabase | Done |
 | 10 | OpenClaw hooks — boot-md (BOOT.md context injection) + command-logger (audit trail) | Done |
 | 11 | Custom OpenClaw skill — news-pipeline skill for Telegram pipeline monitoring | Done |
-| 12 | Health monitor agent — Agent 3 checks pipeline status every 4h, Telegram alert on failure | Done |
+| 12 | Health monitor — third cron session checks pipeline status every 4h, Telegram alert on failure | Done |
 | 13 | README polish — full redeploy instructions | Done |
+| 14 | PRD — full product requirements document added to docs/ | Done |
 
 ---
 
