@@ -140,6 +140,8 @@ ai-news-agent/
 │   │   ├── layout.js
 │   │   └── globals.css            # Keyframe animations: fadeInUp, orbFloat, pulseDot
 │   └── package.json
+├── docs/
+│   └── PRD.md                 # Product Requirements Document
 ├── supabase/
 │   └── schema.sql             # Articles table schema
 ├── .gitignore
