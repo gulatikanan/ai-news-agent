@@ -200,7 +200,7 @@ npm install
 node scripts/run.js
 ```
 
-Runs the full two-agent pipeline: collector fetches and upserts articles, summarizer picks up any with missing summaries. Existing articles are skipped (deduplication by URL).
+Runs the collector then summarizer in sequence: collector fetches and upserts articles, summarizer picks up any with missing summaries. Existing articles are skipped (deduplication by URL).
 
 To run a single agent:
 ```bash
